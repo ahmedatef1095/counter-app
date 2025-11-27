@@ -7,7 +7,7 @@ pipeline {
         // Target server user and IP/hostname
         REMOTE_USER_HOST = 'ec2-user@16.171.26.62'
         // Absolute path to the project directory on the target server
-        REMOTE_PROJECT_PATH = '/app'
+        REMOTE_PROJECT_PATH = '/counter-app'
         // The URL of your Git repository - IMPORTANT: UPDATE THIS URL
         GIT_REPO_URL = 'https://github.com/your-username/your-repo.git'
     }
