@@ -12,7 +12,9 @@ pipeline {
     tools {
         // This tells Jenkins to use an Ansible installation configured in "Global Tool Configuration".
         // It will add the Ansible binaries to the PATH for this pipeline.
-        ansible 'Default' // 'Default' is an example name, use the name you configured.
+        // IMPORTANT: The name here ('ansible-latest') MUST match the 'Name' you configured
+        // in Manage Jenkins -> Global Tool Configuration -> Ansible.
+        ansible 'ansible-latest'
     }
     stages {
         // Stage 1: Checkout code from your version control system
