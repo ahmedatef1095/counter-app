@@ -1,59 +1,52 @@
 pipeline {
+    // Define an agent. This should be a Jenkins agent with Ansible and Docker installed.
     agent any
 
     environment {
-        // Jenkins credential ID for SSH access to the target server
-        REMOTE_CREDENTIALS_ID = 'App_Server_SSH_Key' 
-        // Target server user and IP/hostname
-        REMOTE_USER_HOST = 'ec2-user@16.171.26.62'
-        // Absolute path to the project directory on the target server
-        // Use '~' as a shortcut for the user's home directory (e.g., /home/ec2-user)
-        REMOTE_PROJECT_PATH = '~/counter-app'
-        // The URL of your Git repository - IMPORTANT: UPDATE THIS URL
-        GIT_REPO_URL = 'https://github.com/ahmedatef1095/counter-app.git'
+        // Set your Docker Hub username.
+        // For better practice, this could also be a global variable in Jenkins.
+        DOCKER_USER = 'ahmedatef1095'
     }
 
     stages {
+        // Stage 1: Checkout code from your version control system
         stage('Checkout') {
             steps {
-                // This will check out the code from the repository configured in the Jenkins job
-                echo 'Checking out source code...'
+                // This will check out the code from the repository where this Jenkinsfile is located.
                 checkout scm
             }
         }
 
-        stage('Deploy to Target Server') {
+        // Stage 2: Build the Docker image and push it to Docker Hub
+        stage('Build and Push') {
             steps {
                 script {
-                    // Use the sshagent wrapper to securely connect to the remote server
-                    sshagent(credentials: [REMOTE_CREDENTIALS_ID]) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER_HOST} '''
-                                # Ensure the project directory exists and navigate into it
-                                mkdir -p ${REMOTE_PROJECT_PATH}
-                                cd ${REMOTE_PROJECT_PATH}
-                                
-                                # Check if this is a git repository. If not, clone it.
-                                if [ ! -d ".git" ]; then
-                                    echo "Git repository not found. Cloning from ${GIT_REPO_URL}..."
-                                    git clone ${GIT_REPO_URL} .
-                                else
-                                    echo "Git repository found. Pulling latest code..."
-                                    # Reset any local changes and pull the latest from the main branch
-                                    git fetch origin
-                                    git reset --hard origin/main # Or your default branch
-                                    git pull origin main
-                                fi
+                    // Use the Jenkins Credentials plugin to securely handle your Docker Hub password.
+                    // 'dockerhub-password' is the ID of the "Secret text" credential you set up in Jenkins.
+                    withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASSWORD')]) {
+                        echo 'Building and pushing the Docker image...'
+                        // Execute the build-push.yml playbook
+                        sh "ansible-playbook ansible/build-push.yml --extra-vars 'docker_user=${DOCKER_USER} docker_password=${DOCKER_PASSWORD}'"
+                    }
+                }
+            }
+        }
 
-                                # Stop and remove old containers to ensure a clean start
-                                echo "Bringing down existing Docker containers..."
-                                docker-compose down
-
-                                # Build new images and start the services in detached mode
-                                echo "Building and starting new Docker containers..."
-                                docker-compose up --build -d
-                            '''
-                        """
+        // Stage 3: Deploy the application to the server
+        stage('Deploy') {
+            steps {
+                script {
+                    // This step requires two credentials:
+                    // 1. The Docker Hub password to pull the private image on the server.
+                    // 2. The SSH private key to connect to your application server ('app-server-ssh-key').
+                    withCredentials([
+                        string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASSWORD'),
+                        sshUserPrivateKey(credentialsId: 'app-server-ssh-key', keyFileVariable: 'SSH_KEY_FILE', usernameVariable: 'SSH_USER')
+                    ]) {
+                        echo "Deploying the application to the server..."
+                        // Execute the deploy.yml playbook.
+                        // This assumes you have an 'inventory' file in your 'ansible' directory for target hosts.
+                        sh "ansible-playbook -i ansible/inventory ansible/deploy.yml --extra-vars 'docker_user=${DOCKER_USER} docker_password=${DOCKER_PASSWORD}'"
                     }
                 }
             }

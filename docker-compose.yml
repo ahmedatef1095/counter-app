@@ -1,24 +1,21 @@
-#version: "3.8"
+version: "3.8"
+
 services:
-  web-fe:
+  web:
     build: .
-    command: python app.py
     ports:
-      - target: 5000
-        published: 5000
+      # Map port 5000 on the host to port 5000 in the container
+      - "5000:5000"
     networks:
       - counter-net
     volumes:
-      - type: volume
-        source: counter-vol
-        target: /code
+      # Mount the src directory into the container for live code reloading during development
+      - ./src:/app
+
   redis:
     image: "redis:alpine"
     networks:
-      counter-net:
+      - counter-net
 
 networks:
   counter-net:
-
-volumes:
-  counter-vol:

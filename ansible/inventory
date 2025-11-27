@@ -1,0 +1,10 @@
+# This is your Ansible inventory file.
+# It maps the logical host group 'app_server' from your playbook
+# to your real server's connection details.
+
+[app_server]
+16.171.26.62
+
+[jenkins_sever]
+localhost
+

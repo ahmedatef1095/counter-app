@@ -1,0 +1,43 @@
+---
+- name: Build and Push Docker Image to Docker Hub
+  # This playbook runs on 'localhost' because it is executed by a CI/CD tool like Jenkins.
+  # 'localhost' refers to the Jenkins agent itself (e.g., an EC2 instance),
+  # which has checked out the code and will build the Docker image locally.
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    # Replace with your Docker Hub username
+    docker_user: ahmedatef1095
+    # Replace with your desired image name
+    image_name: counter-app
+    image_tag: latest
+
+  tasks:
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ docker_user }}"
+        password: "{{ docker_password }}" # Use --extra-vars "docker_password=your_password"
+      become: no
+
+    - name: Build the Docker image
+      community.docker.docker_image:
+        name: "{{ docker_user }}/{{ image_name }}:{{ image_tag }}"
+        build:
+          path: ../  # Path to the directory containing the Dockerfile
+        source: build
+        state: present
+      become: no
+
+    - name: Push the Docker image to Docker Hub
+      community.docker.docker_image:
+        name: "{{ docker_user }}/{{ image_name }}:{{ image_tag }}"
+        push: yes
+        source: build
+      become: no
+
+    - name: Log out from Docker Hub
+      community.docker.docker_login:
+        state: absent
+      become: no
