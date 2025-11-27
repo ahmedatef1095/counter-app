@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
 
     environment {
         DOCKER_IMAGE = "ahmedatef1095/counter_app"
