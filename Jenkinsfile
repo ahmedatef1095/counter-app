@@ -76,14 +76,15 @@ pipeline {
 
     post {
         always {
-            // Provide a node context for the post-build actions to run in.
-            node {
+            // Define an agent for this post-build stage to run on.
+            agent any
+            steps {
                 script {
                     echo 'Pipeline finished. Logging out from Docker Hub...'
                     withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASSWORD')]) {
                         // We need to checkout the code again to access the logout playbook.
                         checkout scm
-                        sh 'ansible-playbook ansible/logout.yml'
+                        sh 'ansible-playbook ansible/logout.yml --extra-vars "docker_password=$DOCKER_PASSWORD"'
                     }
                 }
             }
