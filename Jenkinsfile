@@ -1,20 +1,19 @@
 pipeline {
-    // Define an agent. This could be any agent, as we will specify tools below.
-    // The agent still needs Docker installed and running.
-    agent any
+    // Use a Docker container as the build agent.
+    // This image contains both Ansible and the Docker client.
+    // This makes the build environment consistent and removes the need for the 'tools' directive.
+    agent {
+        docker {
+            image 'cytopia/ansible-docker:latest'
+            // We need to mount the host's Docker socket so we can run Docker commands from inside the container.
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         // Set your Docker Hub username.
         // For better practice, this could also be a global variable in Jenkins.
         DOCKER_USER = 'ahmedatef1095'
-    }
-
-    tools {
-        // This tells Jenkins to use an Ansible installation configured in "Global Tool Configuration".
-        // It will add the Ansible binaries to the PATH for this pipeline.
-        // IMPORTANT: The name here ('ansible-latest') MUST match the 'Name' you configured
-        // in Manage Jenkins -> Global Tool Configuration -> Ansible.
-        ansible 'ansible-latest'
     }
     stages {
         // Stage 1: Checkout code from your version control system
