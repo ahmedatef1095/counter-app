@@ -1,5 +1,6 @@
 pipeline {
-    // Define an agent. This should be a Jenkins agent with Ansible and Docker installed.
+    // Define an agent. This could be any agent, as we will specify tools below.
+    // The agent still needs Docker installed and running.
     agent any
 
     environment {
@@ -8,6 +9,11 @@ pipeline {
         DOCKER_USER = 'ahmedatef1095'
     }
 
+    tools {
+        // This tells Jenkins to use an Ansible installation configured in "Global Tool Configuration".
+        // It will add the Ansible binaries to the PATH for this pipeline.
+        ansible 'Default' // 'Default' is an example name, use the name you configured.
+    }
     stages {
         // Stage 1: Checkout code from your version control system
         stage('Checkout') {
@@ -24,9 +30,10 @@ pipeline {
                     // Use the Jenkins Credentials plugin to securely handle your Docker Hub password.
                     // 'dockerhub-password' is the ID of the "Secret text" credential you set up in Jenkins.
                     withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASSWORD')]) {
-                        echo 'Building and pushing the Docker image...'
-                        // Execute the build-push.yml playbook
-                        sh "ansible-playbook ansible/build-push.yml --extra-vars 'docker_user=${DOCKER_USER} docker_password=${DOCKER_PASSWORD}'"
+                        echo 'Building and pushing the Docker image...'                        
+                        // Use single quotes to prevent Groovy from interpolating the secret.
+                        // The shell will safely expand the $DOCKER_PASSWORD environment variable.
+                        sh 'ansible-playbook ansible/build-push.yml --extra-vars "docker_user=${DOCKER_USER} docker_password=$DOCKER_PASSWORD"'
                     }
                 }
             }
@@ -44,9 +51,9 @@ pipeline {
                         sshUserPrivateKey(credentialsId: 'app-server-ssh-key', keyFileVariable: 'SSH_KEY_FILE', usernameVariable: 'SSH_USER')
                     ]) {
                         echo "Deploying the application to the server..."
-                        // Execute the deploy.yml playbook.
-                        // This assumes you have an 'inventory' file in your 'ansible' directory for target hosts.
-                        sh "ansible-playbook -i ansible/inventory ansible/deploy.yml --extra-vars 'docker_user=${DOCKER_USER} docker_password=${DOCKER_PASSWORD}'"
+                        // Use single quotes here as well for the same security reasons.
+                        // The -i flag points to the inventory file.
+                        sh 'ansible-playbook -i ansible/inventory ansible/deploy.yml --extra-vars "docker_user=${DOCKER_USER} docker_password=$DOCKER_PASSWORD"'
                     }
                 }
             }
