@@ -12,7 +12,8 @@
     docker_user: ahmedatef1095
     # Replace with your desired image name
     image_name: counter-app
-    image_tag: latest
+    # Use a unique tag for each build. This can be passed from Jenkins.
+    image_tag: "{{ lookup('env', 'GIT_COMMIT') | default('latest', true) }}"
 
   tasks:
     - name: Log in to Docker Hub

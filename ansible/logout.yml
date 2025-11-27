@@ -1,0 +1,8 @@
+---
+- name: Log out from Docker Hub
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Log out
+      community.docker.docker_login:
+        state: absent

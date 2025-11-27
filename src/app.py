@@ -1,5 +1,6 @@
 import time
 import redis
+import os
 from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
@@ -27,4 +28,7 @@ def api_hits():
     return jsonify({"hits": count})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    # Never run with debug=True in production.
+    # Use an environment variable to control debug mode.
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+    app.run(host="0.0.0.0", debug=debug_mode)

@@ -7,7 +7,7 @@
     # These should match the image you pushed
     docker_user: ahmedatef1095
     image_name: counter-app
-    image_tag: latest
+    image_tag: "{{ lookup('env', 'GIT_COMMIT') | default('latest', true) }}"
     container_name: counter-app
     redis_container_name: redis
     network_name: counter-net

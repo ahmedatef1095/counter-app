@@ -4,7 +4,8 @@ pipeline {
     // This makes the build environment consistent and removes the need for the 'tools' directive.
     agent {
         docker {
-            image 'cytopia/ansible-docker:latest'
+            // Pin the agent image to a specific version for reproducible and secure builds.
+            image 'cytopia/ansible-docker:2.10-0.3.3'
             // We need to mount the host's Docker socket so we can run Docker commands from inside the container.
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
@@ -21,6 +22,15 @@ pipeline {
             steps {
                 // This will check out the code from the repository where this Jenkinsfile is located.
                 checkout scm
+            }
+        }
+
+        // DevSecOps: Add a security scanning stage
+        stage('Scan Image') {
+            steps {
+                echo 'Scanning Docker image for vulnerabilities...'
+                // This command uses Trivy (installed in the agent) to scan the image for vulnerabilities.
+                sh "trivy image --exit-code 1 --severity HIGH,CRITICAL ${DOCKER_USER}/counter-app:latest"
             }
         }
 
@@ -56,6 +66,17 @@ pipeline {
                         // The -i flag points to the inventory file.
                         sh 'ansible-playbook -i ansible/inventory ansible/deploy.yml --extra-vars "docker_user=${DOCKER_USER} docker_password=$DOCKER_PASSWORD"'
                     }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                echo 'Pipeline finished. Logging out from Docker Hub...'
+                // This ensures the Docker Hub logout happens even if a stage fails.
+                withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASSWORD')]) {
+                    sh 'ansible-playbook ansible/logout.yml'
                 }
             }
         }
