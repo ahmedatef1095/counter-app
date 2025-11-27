@@ -10,7 +10,7 @@ pipeline {
         // Use '~' as a shortcut for the user's home directory (e.g., /home/ec2-user)
         REMOTE_PROJECT_PATH = '~/counter-app'
         // The URL of your Git repository - IMPORTANT: UPDATE THIS URL
-        GIT_REPO_URL = 'https://github.com/your-username/your-repo.git'
+        GIT_REPO_URL = 'https://github.com/ahmedatef1095/counter-app.git'
     }
 
     stages {
